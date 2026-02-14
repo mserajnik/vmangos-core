@@ -517,20 +517,21 @@ void IO::Networking::AsyncSocket::OnIoEvent(uint32_t event)
             sLog.Out(LOG_NETWORK, LOG_LVL_ERROR, "[%s] epoll reported socket error: Internal error", GetRemoteIpString().c_str());
         }
         StopPendingTransactionsAndForceClose();
+        return;
     }
-    else if (event & EPOLLRDHUP)
-    {
-        sLog.Out(LOG_NETWORK, LOG_LVL_DEBUG, "[%s] EPOLLRDHUP -> Going to disconnect.", GetRemoteIpString().c_str());
-        StopPendingTransactionsAndForceClose();
-    }
-    else
-    {
-        if (event & EPOLLIN)
-            PerformNonBlockingRead();
 
-        if (event & EPOLLOUT)
-            PerformNonBlockingWrite();
+    if (event & (EPOLLRDHUP | EPOLLHUP))
+    {
+        sLog.Out(LOG_NETWORK, LOG_LVL_DEBUG, "[%s] epoll reported hangup (event=%u) -> Going to disconnect.", GetRemoteIpString().c_str(), event);
+        StopPendingTransactionsAndForceClose();
+        return;
     }
+
+    if (event & EPOLLIN)
+        PerformNonBlockingRead();
+
+    if (event & EPOLLOUT)
+        PerformNonBlockingWrite();
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
     switch ((int)event) // it's a "filter" from kqueue
     {
