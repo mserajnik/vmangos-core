@@ -133,6 +133,10 @@ public:
     void AddHunterAmmo();
     uint8 GetHighestHonorRankFromEquippedItems() const;
     void UpdateVisualHonorRankBasedOnItems();
+    // Match the client low-durability warning threshold.
+    static constexpr uint32 BOT_LOW_DURABILITY_REPAIR_THRESHOLD = 5;
+    bool HasEquippedItemAtOrBelowRepairThreshold() const;
+    void RepairDamagedEquippedGear();
 
     bool SummonShamanTotems();
     SpellCastResult CastWeaponBuff(SpellEntry const* pSpellEntry, EquipmentSlots slot);

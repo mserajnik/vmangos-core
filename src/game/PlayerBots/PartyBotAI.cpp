@@ -659,6 +659,9 @@ void PartyBotAI::UpdateAI(uint32 const diff)
         m_resetSpellData = false;
     }
 
+    if (!me->IsDead())
+        RepairDamagedEquippedGear();
+
     Player* pLeader = GetPartyLeader();
     if (!pLeader)
     {

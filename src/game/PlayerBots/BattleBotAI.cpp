@@ -699,6 +699,9 @@ void BattleBotAI::UpdateAI(uint32 const diff)
         return;
     }
 
+    if (!me->IsDead())
+        RepairDamagedEquippedGear();
+
     if (!me->InBattleGround())
     {
         if (m_wasInBG)

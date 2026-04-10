@@ -120,6 +120,36 @@ void CombatBotBaseAI::AutoAssignRole()
     m_role = ROLE_MELEE_DPS;
 }
 
+bool CombatBotBaseAI::HasEquippedItemAtOrBelowRepairThreshold() const
+{
+    for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+    {
+        Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        if (!pItem)
+            continue;
+
+        uint32 const maxDurability = pItem->GetUInt32Value(ITEM_FIELD_MAXDURABILITY);
+        if (!maxDurability)
+            continue;
+
+        uint32 const currentDurability = pItem->GetUInt32Value(ITEM_FIELD_DURABILITY);
+        if (currentDurability < maxDurability &&
+            currentDurability <= BOT_LOW_DURABILITY_REPAIR_THRESHOLD)
+            return true;
+    }
+
+    return false;
+}
+
+void CombatBotBaseAI::RepairDamagedEquippedGear()
+{
+    if (!HasEquippedItemAtOrBelowRepairThreshold())
+        return;
+
+    for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+        me->DurabilityRepair((INVENTORY_SLOT_BAG_0 << 8) | slot, false, 0.0f);
+}
+
 void CombatBotBaseAI::ResetSpellData()
 {
     for (auto& ptr : m_spells.raw.spells)
