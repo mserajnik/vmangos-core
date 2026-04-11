@@ -30,6 +30,7 @@ mysql_packet_megabytes=128
 mysql_packet_limit="${mysql_packet_megabytes}M"
 # MySQL runtime SET expects a numeric value and does not support suffixes like M.
 mysql_packet_bytes=$((mysql_packet_megabytes * 1024 * 1024))
+mysqladmin_client_args=(--host=127.0.0.1 --protocol=TCP -u root -proot)
 mysql_client_args=(--host=127.0.0.1 --protocol=TCP -u root -proot --max_allowed_packet="$mysql_packet_limit")
 
 import_sql_file() {
@@ -51,7 +52,7 @@ apply_migration_file() {
 echo "Waiting for database availability..."
 max_attempts=30
 attempt=0
-until docker exec "$mysql_container_id" mysqladmin "${mysql_client_args[@]}" ping --silent &>/dev/null; do
+until docker exec "$mysql_container_id" mysqladmin "${mysqladmin_client_args[@]}" ping --silent &>/dev/null; do
   attempt=$((attempt + 1))
   if [ "$attempt" -gt "$max_attempts" ]; then
     echo "Database failed to become ready in time!" >&2
