@@ -1,0 +1,1 @@
+-- Temporary no-op file used to trigger Pull Request SQL Check on the fork.
