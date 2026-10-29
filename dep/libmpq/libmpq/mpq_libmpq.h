@@ -26,6 +26,7 @@
 #include <iostream>
 #include <deque>
 #include <cstdint>
+#include <cstdio>
 
 using namespace std;
 
@@ -34,37 +35,51 @@ class MPQArchive
 
     public:
         mpq_archive_s* mpq_a;
+        string path;
 
         MPQArchive(const char* filename);
         void close();
 
-        void GetFileListTo(vector<string>& filelist)
+        // Returns `false` if the archive has a list file that cannot be read.
+        bool GetFileListTo(vector<string>& filelist)
         {
             uint32_t filenum;
-            if (libmpq__file_number(mpq_a, "(listfile)", &filenum)) return;
+            if (libmpq__file_number(mpq_a, "(listfile)", &filenum)) return true;
             libmpq__off_t size, transferred;
             libmpq__file_size_unpacked(mpq_a, filenum, &size);
 
-            char* buffer = new char[size];
+            // `strtok` needs a terminating NUL, which the list file does not
+            // have of its own.
+            char* buffer = new char[size + 1];
 
-            libmpq__file_read(mpq_a, filenum, (unsigned char*)buffer, size, &transferred);
+            int32_t result = libmpq__file_read(mpq_a, filenum, (unsigned char*)buffer, size, &transferred);
+            if (result)
+            {
+                printf("Error reading the list file of archive '%s': %s\n", path.c_str(), libmpq__strerror(result));
+                delete[] buffer;
+                return false;
+            }
+            buffer[transferred] = 0;
 
             char seps[] = "\n";
             char* token;
 
             token = strtok(buffer, seps);
-            uint32_t counter = 0;
-            while ((token != NULL) && (counter < size))
+            while (token != NULL)
             {
                 //cout << token << endl;
-                token[strlen(token) - 1] = 0;
+                // Remove the carriage return of a CRLF line end. The last line
+                // can end without one.
+                size_t length = strlen(token);
+                if (token[length - 1] == '\r')
+                    token[length - 1] = 0;
                 string s = token;
                 filelist.push_back(s);
-                counter += strlen(token) + 2;
                 token = strtok(NULL, seps);
             }
 
             delete[] buffer;
+            return true;
         }
 };
 typedef std::deque<MPQArchive*> ArchiveSet;

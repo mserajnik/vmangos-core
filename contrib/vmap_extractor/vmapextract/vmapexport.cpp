@@ -122,7 +122,7 @@ bool ExtractWmo()
     {
         vector<string> filelist;
 
-        (*ar_itr)->GetFileListTo(filelist);
+        success = (*ar_itr)->GetFileListTo(filelist);
         for (vector<string>::iterator fname = filelist.begin(); fname != filelist.end() && success; ++fname)
         {
             if (fname->find(".wmo") != string::npos)
