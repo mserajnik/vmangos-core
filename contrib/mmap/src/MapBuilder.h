@@ -78,7 +78,7 @@ namespace MMAP
                        bool debug               = false,
                        bool quick               = false,
                        const char* offMeshFilePath = nullptr,
-                       uint8 threads = 1);
+                       uint32 threads = 1);
 
             ~MapBuilder();
 
@@ -137,7 +137,7 @@ namespace MMAP
             ProducerConsumerQueue<TileInfo> m_tileQueue;
             std::atomic<bool> m_cancel;
             std::atomic<bool> m_anyError;
-            uint8 m_threads;
+            uint32 m_threads;
     };
 }
 

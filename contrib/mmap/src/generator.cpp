@@ -296,7 +296,7 @@ int main(int argc, char** argv)
         std::cin.get();
     }
 
-    MapBuilder builder(configInputPath, skipLiquid, skipContinents, skipJunkMaps, skipBattlegrounds, debug, quick, offMeshInputPath, uint8(threads));
+    MapBuilder builder(configInputPath, skipLiquid, skipContinents, skipJunkMaps, skipBattlegrounds, debug, quick, offMeshInputPath, uint32(threads));
 
     if (buildOnlyGameobjectModels)
         builder.buildTransports();

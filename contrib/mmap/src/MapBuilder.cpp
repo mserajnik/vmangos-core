@@ -40,7 +40,7 @@ namespace MMAP
                            bool debug,
                            bool quick,
                            char const* offMeshFilePath,
-                           uint8 threads) :
+                           uint32 threads) :
         m_terrainBuilder(nullptr),
         m_debug(debug),
         m_offMeshFilePath(offMeshFilePath),
@@ -253,7 +253,7 @@ namespace MMAP
     void MapBuilder::processQueuedTiles()
     {
         std::vector<std::unique_ptr<TileWorker>> workers;
-        for (uint8 i = 0; i < m_threads; ++i)
+        for (uint32 i = 0; i < m_threads; ++i)
         {
             workers.emplace_back(std::make_unique<TileWorker>(this, m_skipLiquid, m_quick, m_debug, m_config));
         }
