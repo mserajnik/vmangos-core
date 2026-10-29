@@ -471,7 +471,9 @@ namespace MMAP
         if (!navMesh->init(&navMeshParams))
         {
             printf("[Map %03i] Failed creating navmesh!                   \n", mapID);
+            m_anyError.store(true);
             dtFreeNavMesh(navMesh);
+            navMesh = nullptr;
             return;
         }
 
@@ -482,9 +484,11 @@ namespace MMAP
         if (!file)
         {
             dtFreeNavMesh(navMesh);
+            navMesh = nullptr;
             char message[1024];
             snprintf(message, sizeof(message), "[Map %03i] Failed to open %s for writing!             \n", mapID, fileName);
             perror(message);
+            m_anyError.store(true);
             return;
         }
 
