@@ -19,9 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-import concurrent.futures
 import functools
-import os
 import pathlib
 import platform
 import struct
@@ -115,7 +113,7 @@ def get_subprocess_config() -> SubprocessConfig:
 def run_move_map_gen(*leading_args: str) -> None:
     config = get_subprocess_config()
     subprocess.check_call(
-        (config.executable, *leading_args, "--silent", "--threads", "1", *sys.argv[1:]),
+        (config.executable, *leading_args, "--silent", *sys.argv[1:]),
         startupinfo=config.startupinfo,
         creationflags=config.creation_flags,
         stdout=subprocess.DEVNULL,
@@ -138,26 +136,19 @@ def main() -> None:
                 break
             map_ids.add(spawn.map_id)
 
-    max_workers = os.cpu_count() or 1
-    print(f"Using {max_workers} worker(s) for map processing")
-    pool = concurrent.futures.ThreadPoolExecutor(max_workers)
-
-    # Create mmaps directory beforehand to avoid a race condition in MoveMapGenerator
-    mmaps_directory = current_working_directory / "mmaps"
-    mmaps_directory.mkdir(exist_ok=True)
-
-    # Process maps
-    future_to_map_id = {pool.submit(run_move_map_gen, str(map_id)): map_id for map_id in sorted(map_ids)}
-    total = len(future_to_map_id)
+    # Process the maps one at a time. MoveMapGenerator builds the tiles of each map on all
+    # cores, or on as many threads as a --threads argument passed to this script sets.
+    total = len(map_ids)
     num_errors = 0
-    for number, future in enumerate(concurrent.futures.as_completed(future_to_map_id), start=1):
-        map_id = future_to_map_id[future]
-        exception = future.exception()
-        if exception:
+    for number, map_id in enumerate(sorted(map_ids), start=1):
+        try:
+            run_move_map_gen(str(map_id))
+        except (OSError, subprocess.CalledProcessError) as exception:
             num_errors += 1
-        print(f"({number}/{total}) Map #{map_id}:", exception or "Processed successfully")
+            print(f"({number}/{total}) Map #{map_id}:", exception)
+        else:
+            print(f"({number}/{total}) Map #{map_id}: Processed successfully")
 
-    pool.shutdown()
     print(f"Finished processing all maps ({total}) with {num_errors} error(s)")
 
     # The per-map runs above only build each map's tiles. The transport gameobject models
