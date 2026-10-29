@@ -19,6 +19,7 @@
 #ifndef _MMAP_COMMON_H
 #define _MMAP_COMMON_H
 
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,20 @@ using namespace std;
 
 namespace MMAP
 {
+    // Closes a file the generator wrote and deletes it if writing to it failed.
+    inline bool closeWrittenFile(FILE* file, char const* fileName)
+    {
+        bool written = !ferror(file);
+        if (fclose(file) != 0)
+            written = false;
+        if (!written)
+        {
+            printf("Failed writing %s!\n", fileName);
+            remove(fileName);
+        }
+        return written;
+    }
+
     inline bool matchWildcardFilter(const char* filter, const char* str)
     {
         if (!filter || !str)

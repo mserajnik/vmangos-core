@@ -909,7 +909,12 @@ namespace MMAP
 
             // write data
             fwrite(navData, sizeof(unsigned char), navDataSize, file);
-            fclose(file);
+            if (!closeWrittenFile(file, fileName))
+            {
+                m_mapBuilder->m_anyError.store(true);
+                navMesh->removeTile(tileRef, nullptr, nullptr);
+                continue;
+            }
             m_mapBuilder->m_anyTileWritten.store(true);
 
             if (m_debug)

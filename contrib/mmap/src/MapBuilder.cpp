@@ -494,7 +494,12 @@ namespace MMAP
 
         // now that we know navMesh params are valid, we can write them to file
         fwrite(&navMeshParams, sizeof(dtNavMeshParams), 1, file);
-        fclose(file);
+        if (!closeWrittenFile(file, fileName))
+        {
+            dtFreeNavMesh(navMesh);
+            navMesh = nullptr;
+            m_anyError.store(true);
+        }
     }
 
     void MapBuilder::getTileBounds(uint32 tileX, uint32 tileY, float* verts, int vertCount, float* bmin, float* bmax)
@@ -831,7 +836,12 @@ namespace MMAP
 
         // write data
         fwrite(navData, sizeof(unsigned char), navDataSize, file);
-        fclose(file);
+        if (!closeWrittenFile(file, fileName))
+        {
+            m_anyError.store(true);
+            dtFree(navData);
+            return;
+        }
         if (m_debug)
         {
             iv.generateObjFile(modelName, meshData);
