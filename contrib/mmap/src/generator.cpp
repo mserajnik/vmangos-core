@@ -82,7 +82,7 @@ void printUsage()
     printf("-? or /? or -h : This help\n");
     printf("[#] : Build only the map specified by #.\n");
     printf("--tile [#,#] : Build the specified tile\n");
-    printf("--threads : amount of threads to use for extraction.\n");
+    printf("--threads : amount of threads to use for extraction (with --silent, all available cores by default).\n");
     printf("--skipLiquid : liquid data for maps\n");
     printf("--skipContinents : skip continents\n");
     printf("--skipJunkMaps : junk maps include some unused\n");
@@ -280,6 +280,9 @@ int main(int argc, char** argv)
         std::cout << "offMeshInputPath = " << offMeshInputPath << endl;
         std::cout << "configInputPath = " << configInputPath << endl;
     }
+
+    if (!threads && silent)
+        threads = std::max(1, int(std::thread::hardware_concurrency()));
 
     if (!threads)
     {
