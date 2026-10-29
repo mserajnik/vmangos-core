@@ -571,6 +571,7 @@ namespace MMAP
         if (!m.readFile("vmaps/" + modelName))
         {
             printf("* Unable to open file\n");
+            m_anyError.store(true);
             return;
         }
 
@@ -648,6 +649,7 @@ namespace MMAP
         if (!tile.solid || !rcCreateHeightfield(m_rcContext, *tile.solid, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
         {
             printf("* Failed building heightfield!            \n");
+            m_anyError.store(true);
             return;
         }
         unsigned char* m_triareas = new unsigned char[tTriCount];
@@ -662,23 +664,27 @@ namespace MMAP
         if (!tile.chf || !rcBuildCompactHeightfield(m_rcContext, config.walkableHeight, config.walkableClimb, *tile.solid, *tile.chf))
         {
             printf("Failed compacting heightfield!            \n");
+            m_anyError.store(true);
             return;
         }
         // Erode the walkable area by agent radius.
         if (!rcErodeWalkableArea(m_rcContext, config.walkableRadius, *tile.chf))
         {
             printf("Failed eroding heightfield!            \n");
+            m_anyError.store(true);
             return;
         }
         if (!rcBuildDistanceField(m_rcContext, *tile.chf))
         {
             printf("Failed building distance field!         \n");
+            m_anyError.store(true);
             return;
         }
 
         if (!rcBuildRegions(m_rcContext, *tile.chf, 0, config.minRegionArea, config.mergeRegionArea))
         {
             printf("Failed building regions!                \n");
+            m_anyError.store(true);
             return;
         }
 
@@ -686,6 +692,7 @@ namespace MMAP
         if (!tile.cset || !rcBuildContours(m_rcContext, *tile.chf, config.maxSimplificationError, config.maxEdgeLen, *tile.cset))
         {
             printf("Failed building contours!               \n");
+            m_anyError.store(true);
             return;
         }
 
@@ -694,6 +701,7 @@ namespace MMAP
         if (!tile.pmesh || !rcBuildPolyMesh(m_rcContext, *tile.cset, config.maxVertsPerPoly, *tile.pmesh))
         {
             printf("Failed building polymesh!               \n");
+            m_anyError.store(true);
             return;
         }
 
@@ -701,6 +709,7 @@ namespace MMAP
         if (!tile.dmesh || !rcBuildPolyMeshDetail(m_rcContext, *tile.pmesh, *tile.chf, config.detailSampleDist, config.detailSampleMaxError, *tile.dmesh))
         {
             printf("Failed building polymesh detail!        \n");
+            m_anyError.store(true);
             return;
         }
         rcFreeHeightField(tile.solid);
@@ -757,11 +766,13 @@ namespace MMAP
         if (params.nvp > DT_VERTS_PER_POLYGON)
         {
             printf("Invalid verts-per-polygon value!        \n");
+            m_anyError.store(true);
             return;
         }
         if (params.vertCount >= 0xffff)
         {
             printf("Too many vertices! (0x%8x)        \n", params.vertCount);
+            m_anyError.store(true);
             return;
         }
         if (!params.vertCount || !params.verts)
@@ -785,6 +796,7 @@ namespace MMAP
         if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
         {
             printf("Failed building navmesh tile!           \n");
+            m_anyError.store(true);
             return;
         }
         char fileName[255];
@@ -795,6 +807,7 @@ namespace MMAP
             char message[1024];
             snprintf(message, sizeof(message), "Failed to open %s for writing!\n", fileName);
             perror(message);
+            m_anyError.store(true);
             dtFree(navData);
             return;
         }
