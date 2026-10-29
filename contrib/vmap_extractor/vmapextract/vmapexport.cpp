@@ -291,6 +291,17 @@ void getGamePath()
 #endif
 }
 
+// Adds the archive to the list unless it does not exist. An archive that
+// exists but cannot be read is added too, so that opening it fails.
+void addArchiveIfPresent(char const* path, std::vector<std::string>& pArchiveNames)
+{
+    FILE* h = fopen(path, "rb");
+    if (h)
+        fclose(h);
+    if (h || errno != ENOENT)
+        pArchiveNames.push_back(path);
+}
+
 bool scan_patches(char* scanmatch, std::vector<std::string>& pArchiveNames)
 {
     int i;
@@ -306,12 +317,7 @@ bool scan_patches(char* scanmatch, std::vector<std::string>& pArchiveNames)
         {
             snprintf(path, sizeof(path), "%s.MPQ", scanmatch);
         }
-        if (FILE* h = fopen(path, "rb"))
-        {
-            fclose(h);
-            //matches.push_back(path);
-            pArchiveNames.push_back(path);
-        }
+        addArchiveIfPresent(path, pArchiveNames);
     }
 
     return (true);
@@ -333,13 +339,13 @@ bool fillArchiveNameVector(std::vector<std::string>& pArchiveNames)
     snprintf(path, sizeof(path), "%smodel.MPQ", input_path);
     pArchiveNames.push_back(path);
     snprintf(path, sizeof(path), "%stexture.MPQ", input_path);
-    pArchiveNames.push_back(path);
+    addArchiveIfPresent(path, pArchiveNames);
     snprintf(path, sizeof(path), "%swmo.MPQ", input_path);
     pArchiveNames.push_back(path);
     snprintf(path, sizeof(path), "%sbase.MPQ", input_path);
-    pArchiveNames.push_back(path);
+    addArchiveIfPresent(path, pArchiveNames);
     snprintf(path, sizeof(path), "%smisc.MPQ", input_path);
-    pArchiveNames.push_back(path);
+    addArchiveIfPresent(path, pArchiveNames);
 
     // now, scan for the patch levels in the core dir
     printf("Scanning patch levels from data directory.\n");
@@ -491,7 +497,10 @@ int main(int argc, char** argv)
     {
         MPQArchive* archive = new MPQArchive(archiveNames[i].c_str());
         if (!gOpenArchives.size() || gOpenArchives.front() != archive)
+        {
             delete archive;
+            success = false;
+        }
     }
 
     if (gOpenArchives.empty())
