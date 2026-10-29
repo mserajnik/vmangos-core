@@ -212,7 +212,7 @@ bool handleArgs(int argc, char** argv,
             int map = atoi(argv[i]);
             if (map > 0 || (map == 0 && (strcmp(argv[i], "0") == 0)))
                 mapId = map;
-            else if (!buildOnlyGameobjectModels)
+            else
             {
                 printf("invalid map id\n");
                 return false;
