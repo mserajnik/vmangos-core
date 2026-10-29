@@ -19,6 +19,7 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include <stdio.h>
+#include <cerrno>
 #include <cstring>
 #include <deque>
 #include <set>
@@ -71,6 +72,8 @@ uint16* areas;
 char output_path[128] = ".";
 char input_path[128] = ".";
 uint32 maxAreaId = 0;
+// Set by failures that leave the extracted data incomplete
+bool anyError = false;
 
 //**************************************************
 // Extractor options
@@ -111,10 +114,29 @@ const char* CONF_mpq_list[] =
 void CreateDir(const std::string& Path)
 {
 #ifdef _WIN32
-    _mkdir(Path.c_str());
+    int result = _mkdir(Path.c_str());
 #else
-    mkdir(Path.c_str(), 0777);
+    int result = mkdir(Path.c_str(), 0777);
 #endif
+    if (result != 0 && errno != EEXIST)
+    {
+        printf("Can't create the directory '%s'\n", Path.c_str());
+        anyError = true;
+    }
+}
+
+// Closes an output file; returns `false` and deletes the file if writing to it failed.
+bool CloseOutputFile(FILE* output, char const* filename)
+{
+    bool written = !ferror(output);
+    if (fclose(output) != 0)
+        written = false;
+    if (!written)
+    {
+        printf("Can't write the output file '%s'\n", filename);
+        remove(filename);
+    }
+    return written;
 }
 
 bool FileExists(const char* FileName)
@@ -816,9 +838,7 @@ bool ConvertADT(char* filename, char* filename2, int cell_y, int cell_x)
     // store hole data
     fwrite(holes, map.holesSize, 1, output);
 
-    fclose(output);
-
-    return true;
+    return CloseOutputFile(output, filename2);
 }
 
 void ExtractMapsFromMpq()
@@ -858,7 +878,8 @@ void ExtractMapsFromMpq()
                     continue;
                 snprintf(mpq_filename, sizeof(mpq_filename), "World\\Maps\\%s\\%s_%u_%u.adt", map_ids[z].name, map_ids[z].name, x, y);
                 snprintf(output_filename, sizeof(output_filename), "%s/maps/%03u%02u%02u.map", output_path, map_ids[z].id, y, x);
-                ConvertADT(mpq_filename, output_filename, y, x);
+                if (!ConvertADT(mpq_filename, output_filename, y, x))
+                    anyError = true;
             }
             // draw progress bar
             printf("Processing........................%d%%\r", (100 * (y + 1)) / WDT_MAP_SIZE);
@@ -874,13 +895,18 @@ bool ExtractFile(char const* mpq_name, std::string const& filename)
     if (!output)
     {
         printf("Can't create the output file '%s'\n", filename.c_str());
+        anyError = true;
         return false;
     }
     MPQFile m(mpq_name);
     if (!m.isEof())
         fwrite(m.getPointer(), 1, m.getSize(), output);
 
-    fclose(output);
+    if (!CloseOutputFile(output, filename.c_str()))
+    {
+        anyError = true;
+        return false;
+    }
     return true;
 }
 
@@ -894,7 +920,8 @@ void ExtractDBCFiles()
     for (ArchiveSet::iterator i = gOpenArchives.begin(); i != gOpenArchives.end(); ++i)
     {
         vector<string> files;
-        (*i)->GetFileListTo(files);
+        if (!(*i)->GetFileListTo(files))
+            anyError = true;
         for (vector<string>::iterator iter = files.begin(); iter != files.end(); ++iter)
             if (iter->rfind(".dbc") == iter->length() - strlen(".dbc"))
                 dbcfiles.insert(*iter);
@@ -968,8 +995,23 @@ void LoadCommonMPQFiles()
     for (int i = 0; i < count; ++i)
     {
         snprintf(filename, sizeof(filename), "%s/Data/%s", input_path, CONF_mpq_list[i]);
-        if (FileExists(filename))
-            new MPQArchive(filename);
+        if (!FileExists(filename))
+        {
+            // Patch archives are optional.
+            if (errno != ENOENT || strncmp(CONF_mpq_list[i], "patch", strlen("patch")) != 0)
+            {
+                printf("Can't open the archive '%s': %s\n", filename, strerror(errno));
+                anyError = true;
+            }
+            continue;
+        }
+
+        MPQArchive* archive = new MPQArchive(filename);
+        if (gOpenArchives.empty() || gOpenArchives.front() != archive)
+        {
+            delete archive;
+            anyError = true;
+        }
     }
 }
 
@@ -1036,11 +1078,14 @@ int main(int argc, char* arg[])
     // Close MPQs
     CloseMPQFiles();
 
+    if (anyError)
+        printf("Extraction finished with errors, the extracted data is incomplete.\n");
+
     if (!CONF_silent)
     {
         std::cout << "Extraction complete. Press enter to close..." << std::endl;
         std::cin.get();
     }
 
-    return 0;
+    return anyError ? 1 : 0;
 }
