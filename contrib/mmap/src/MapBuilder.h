@@ -108,7 +108,7 @@ namespace MMAP
             void validateConfig(char const* configInputPath);
             std::set<uint32>& getTileList(uint32 mapID);
 
-            void buildMap(uint32 mapID);
+            bool buildMap(uint32 mapID);
             void buildNavMesh(uint32 mapID, dtNavMesh*& navMesh);
 
             void getTileBounds(uint32 tileX, uint32 tileY, float* verts, int vertCount, float* bmin, float* bmax);

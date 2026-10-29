@@ -230,10 +230,11 @@ namespace MMAP
     void MapBuilder::buildSingleMap(uint32 mapID)
     {
         m_cancel.store(false);
-        buildMap(mapID);
+        bool built = buildMap(mapID);
         processQueuedTiles();
 
-        printf("[Map %03i] Updated map file: mmaps/%03u.mmap\n", mapID, mapID);
+        if (built)
+            printf("[Map %03i] Updated map file: mmaps/%03u.mmap\n", mapID, mapID);
         printf("Done.\n");
     }
 
@@ -374,7 +375,7 @@ namespace MMAP
             printf("[Map %03i] No file generated for tile [%02u,%02u]\n", mapID, tileX, tileY);
     }
 
-    void MapBuilder::buildMap(uint32 mapID)
+    bool MapBuilder::buildMap(uint32 mapID)
     {
         printf("Building map %03u:                                    \n", mapID);
 
@@ -394,7 +395,7 @@ namespace MMAP
         }
 
         if (!tiles.size())
-            return;
+            return false;
 
         // build navMesh
         dtNavMesh* navMesh = nullptr;
@@ -402,7 +403,7 @@ namespace MMAP
         if (!navMesh)
         {
             printf("[Map %03i] Failed creating navmesh!                   \n", mapID);
-            return;
+            return false;
         }
 
         // now start building mmtiles for each tile
@@ -430,6 +431,7 @@ namespace MMAP
         dtFreeNavMesh(navMesh);
 
         printf("[Map %03i] Complete!                             \n\n", mapID);
+        return true;
     }
 
     void MapBuilder::buildNavMesh(uint32 mapID, dtNavMesh*& navMesh)
