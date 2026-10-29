@@ -52,6 +52,7 @@ namespace MMAP
         m_rcContext(nullptr),
         m_cancel(false),
         m_anyError(false),
+        m_anyTileWritten(false),
         m_threads(threads)
     {
         std::ifstream jsonConfig(configInputPath);
@@ -319,6 +320,7 @@ namespace MMAP
     void MapBuilder::buildSingleTile(uint32 mapID, uint32 tileX, uint32 tileY)
     {
         m_cancel.store(false);
+        m_anyTileWritten.store(false);
 
         // make sure we process maps which don't have tiles
         std::set<uint32>& tiles = getTileList(mapID);
@@ -366,7 +368,10 @@ namespace MMAP
 
         processQueuedTiles();
 
-        printf("[Map %03i] Generated file: mmaps/%03u%02u%02u.mmtile\n", mapID, mapID, tileY, tileX);
+        if (m_anyTileWritten.load())
+            printf("[Map %03i] Generated file: mmaps/%03u%02u%02u.mmtile\n", mapID, mapID, tileY, tileX);
+        else
+            printf("[Map %03i] No file generated for tile [%02u,%02u]\n", mapID, tileX, tileY);
     }
 
     void MapBuilder::buildMap(uint32 mapID)

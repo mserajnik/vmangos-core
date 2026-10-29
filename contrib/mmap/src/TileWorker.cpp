@@ -910,6 +910,7 @@ namespace MMAP
             // write data
             fwrite(navData, sizeof(unsigned char), navDataSize, file);
             fclose(file);
+            m_mapBuilder->m_anyTileWritten.store(true);
 
             if (m_debug)
             {

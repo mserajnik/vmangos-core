@@ -137,6 +137,7 @@ namespace MMAP
             ProducerConsumerQueue<TileInfo> m_tileQueue;
             std::atomic<bool> m_cancel;
             std::atomic<bool> m_anyError;
+            std::atomic<bool> m_anyTileWritten;
             uint32 m_threads;
     };
 }
