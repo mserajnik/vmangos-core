@@ -19,6 +19,7 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include <stdio.h>
+#include <cctype>
 #include <cerrno>
 #include <cstring>
 #include <deque>
@@ -910,6 +911,22 @@ bool ExtractFile(char const* mpq_name, std::string const& filename)
     return true;
 }
 
+// Returns `true` for a DBC file in the `DBFilesClient` folder, whose name
+// can be in any letter case.
+bool IsDBCFile(std::string const& name)
+{
+    std::string const folder = "DBFilesClient\\";
+    std::string const extension = ".dbc";
+    if (name.size() <= folder.size() + extension.size())
+        return false;
+    for (size_t i = 0; i < folder.size(); ++i)
+    {
+        if (tolower(static_cast<unsigned char>(name[i])) != tolower(static_cast<unsigned char>(folder[i])))
+            return false;
+    }
+    return name.compare(name.size() - extension.size(), extension.size(), extension) == 0;
+}
+
 void ExtractDBCFiles()
 {
     printf("Extracting dbc files...\n");
@@ -923,7 +940,7 @@ void ExtractDBCFiles()
         if (!(*i)->GetFileListTo(files))
             anyError = true;
         for (vector<string>::iterator iter = files.begin(); iter != files.end(); ++iter)
-            if (iter->rfind(".dbc") == iter->length() - strlen(".dbc"))
+            if (IsDBCFile(*iter))
                 dbcfiles.insert(*iter);
     }
 
